@@ -1,0 +1,831 @@
+{% extends "base.html" %}
+
+{% block title %}Interactive Story{% endblock %}
+
+{% block additional_css %}
+<style>
+    .story-container {
+        max-width: 800px;
+        margin: 0 auto;
+    }
+    
+    .story-content {
+        border-radius: 0.5rem;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        padding: 2rem;
+        margin-bottom: 2rem;
+        background-color: white;
+    }
+    
+    .dark-theme .story-content {
+        background-color: #333;
+        color: #f4f4f4;
+    }
+    
+    .choice-btn {
+        display: block;
+        width: 100%;
+        text-align: left;
+        padding: 1rem;
+        margin-bottom: 1rem;
+        border-radius: 0.5rem;
+        transition: all 0.2s;
+    }
+    
+    .choice-btn:hover {
+        transform: translateY(-2px);
+    }
+    
+    .story-header {
+        position: relative;
+    }
+    
+    .story-controls {
+        position: absolute;
+        top: 0;
+        right: 0;
+    }
+    
+    .story-part-indicator {
+        background-color: var(--primary-color);
+        color: white;
+        border-radius: 50%;
+        padding: 0.25rem 0.5rem;
+        font-size: 0.8rem;
+        margin-left: 0.5rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Loading Overlay -->
+    <div class="loading-overlay d-none" id="loadingOverlay">
+        <div class="spinner-border mb-3" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+        <h4 id="loadingMessage">Generating story...</h4>
+    </div>
+
+    <!-- Left Sidebar - Controls -->
+    <div class="col-lg-4 mb-4">
+        <div class="sidebar card shadow-sm">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-book-open me-2"></i>Story Settings
+                </h5>
+            </div>
+            <div class="card-body">
+                <div id="storySettings">
+                    <form id="storyGeneratorForm">
+                        <!-- Language & Level -->
+                        <div class="mb-3">
+                            <label for="language" class="form-label">Language</label>
+                            <select class="form-select" id="language" name="language">
+                                {% for language in languages %}
+                                <option value="{{ language }}">{{ language }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="level" class="form-label">Proficiency Level</label>
+                            <select class="form-select" id="level" name="level">
+                                {% for level in levels %}
+                                <option value="{{ level }}">{{ level }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <!-- Story Title -->
+                        <div class="mb-3">
+                            <label for="storyTitle" class="form-label">Story Title/Theme</label>
+                            <input type="text" class="form-control" id="storyTitle" name="storyTitle" placeholder="e.g., 'The Hidden Treasure'">
+                        </div>
+                        
+                        <!-- Generate Button -->
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="fas fa-book me-2"></i>Start New Story
+                        </button>
+                    </form>
+                </div>
+                
+                <div id="storyChoices" class="d-none">
+                    <h5 class="mb-3">What happens next?</h5>
+                    
+                    <div id="choiceButtons">
+                        <button class="btn btn-outline-primary choice-btn mb-3" id="choice1">
+                            Loading choice 1...
+                        </button>
+                        
+                        <button class="btn btn-outline-primary choice-btn" id="choice2">
+                            Loading choice 2...
+                        </button>
+                    </div>
+                    
+                    <div class="d-grid gap-2 mt-4">
+                        <button class="btn btn-outline-secondary" id="newStoryBtn">
+                            <i class="fas fa-plus me-2"></i>Start New Story
+                        </button>
+                        <button class="btn btn-outline-danger" id="endStoryBtn">
+                            <i class="fas fa-stop-circle me-2"></i>End Story
+                        </button>
+                    </div>
+                </div>
+                
+                <div id="storyEnded" class="d-none">
+                    <div class="alert alert-success">
+                        <i class="fas fa-check-circle me-2"></i>The story has reached its conclusion!
+                    </div>
+                    
+                    <div class="d-grid gap-2 mt-4">
+                        <button class="btn btn-primary" id="newStoryAfterEndBtn">
+                            <i class="fas fa-plus me-2"></i>Start New Story
+                        </button>
+                        <button class="btn btn-outline-primary" id="generateVocabularyBtn">
+                            <i class="fas fa-book me-2"></i>Generate Vocabulary List
+                        </button>
+                        <button class="btn btn-outline-primary" id="generateTranslationBtn">
+                            <i class="fas fa-language me-2"></i>Generate Translation
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Right Content - Story Display -->
+    <div class="col-lg-8">
+        <div id="initialMessage" class="text-center py-5">
+            <i class="fas fa-book-open fa-4x text-muted mb-3"></i>
+            <h4 class="text-muted">No story started yet</h4>
+            <p>Configure the settings and click "Start New Story" to begin a narrative adventure.</p>
+            
+            <div class="mt-4">
+                <h5>How Interactive Stories Work</h5>
+                <div class="row mt-4">
+                    <div class="col-md-6">
+                        <div class="d-flex mb-3">
+                            <div class="me-3">
+                                <i class="fas fa-pencil-alt text-primary fa-2x"></i>
+                            </div>
+                            <div>
+                                <h6>Create a Story</h6>
+                                <p>Choose a language, level, and theme to begin your interactive story.</p>
+                            </div>
+                        </div>
+                        
+                        <div class="d-flex mb-3">
+                            <div class="me-3">
+                                <i class="fas fa-book text-primary fa-2x"></i>
+                            </div>
+                            <div>
+                                <h6>Read the Story</h6>
+                                <p>Enjoy a crafted narrative at your selected language proficiency level.</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <div class="d-flex mb-3">
+                            <div class="me-3">
+                                <i class="fas fa-directions text-primary fa-2x"></i>
+                            </div>
+                            <div>
+                                <h6>Make Choices</h6>
+                                <p>Influence how the story continues by selecting one of two options.</p>
+                            </div>
+                        </div>
+                        
+                        <div class="d-flex mb-3">
+                            <div class="me-3">
+                                <i class="fas fa-graduation-cap text-primary fa-2x"></i>
+                            </div>
+                            <div>
+                                <h6>Learn Vocabulary</h6>
+                                <p>Build language skills through an engaging, interactive narrative.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div id="storyContent" class="d-none">
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-primary text-white story-header">
+                    <h5 class="mb-0" id="storyTitleDisplay">
+                        <i class="fas fa-book-open me-2"></i>Story Title
+                        <span class="story-part-indicator" id="storyPartIndicator">1</span>
+                    </h5>
+                    <div class="story-controls">
+                        <button class="btn btn-sm btn-light" id="copyStoryBtn" title="Copy Story">
+                            <i class="fas fa-copy"></i>
+                        </button>
+                        <button class="btn btn-sm btn-light" id="printStoryBtn" title="Print Story">
+                            <i class="fas fa-print"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <!-- Tabs for story content -->
+                    <ul class="nav nav-tabs" id="storyTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="story-tab" data-bs-toggle="tab" data-bs-target="#story" type="button" role="tab" aria-controls="story" aria-selected="true">
+                                <i class="fas fa-book me-1"></i> Story
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="vocabulary-tab" data-bs-toggle="tab" data-bs-target="#vocabulary" type="button" role="tab" aria-controls="vocabulary" aria-selected="false">
+                                <i class="fas fa-book me-1"></i> Vocabulary
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="translation-tab" data-bs-toggle="tab" data-bs-target="#translation" type="button" role="tab" aria-controls="translation" aria-selected="false">
+                                <i class="fas fa-language me-1"></i> Translation
+                            </button>
+                        </li>
+                    </ul>
+                    
+                    <div class="tab-content p-3" id="storyTabsContent">
+                        <!-- Story Tab -->
+                        <div class="tab-pane fade show active" id="story" role="tabpanel" aria-labelledby="story-tab">
+                            <div class="story-container">
+                                <div class="story-content text-content" id="mainStoryText"></div>
+                            </div>
+                        </div>
+                        
+                        <!-- Vocabulary Tab -->
+                        <div class="tab-pane fade" id="vocabulary" role="tabpanel" aria-labelledby="vocabulary-tab">
+                            <div id="vocabularyContent">
+                                <div class="text-center py-4 vocabulary-placeholder">
+                                    <i class="fas fa-book fa-2x text-muted mb-2"></i>
+                                    <p class="text-muted">No vocabulary list generated yet.</p>
+                                    <button class="btn btn-sm btn-primary" id="vocabularyTabGenBtn">
+                                        <i class="fas fa-magic me-1"></i>Generate Vocabulary
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Translation Tab -->
+                        <div class="tab-pane fade" id="translation" role="tabpanel" aria-labelledby="translation-tab">
+                            <div id="translationContent">
+                                <div class="text-center py-4 translation-placeholder">
+                                    <i class="fas fa-language fa-2x text-muted mb-2"></i>
+                                    <p class="text-muted">No translation generated yet.</p>
+                                    <div class="mb-3">
+                                        <label for="translationTargetLang" class="form-label">Target Language</label>
+                                        <select class="form-select" id="translationTargetLang">
+                                            {% for language in languages %}
+                                            <option value="{{ language }}">{{ language }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <button class="btn btn-sm btn-primary" id="translationTabGenBtn">
+                                        <i class="fas fa-magic me-1"></i>Generate Translation
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block additional_js %}
+<script>
+    // Current story data
+    let currentStoryData = {
+        id: null,
+        title: '',
+        language: '',
+        level: '',
+        part: 1,
+        text: '',
+        choices: [],
+        is_final: false
+    };
+    
+    $(document).ready(function() {
+        // Load settings
+        const settings = JSON.parse(localStorage.getItem('appSettings')) || {};
+        if (settings.defaultLanguage) {
+            $('#language').val(settings.defaultLanguage);
+        }
+        if (settings.defaultLevel) {
+            $('#level').val(settings.defaultLevel);
+        }
+        
+        // Form submission - Start new story
+        $('#storyGeneratorForm').submit(function(e) {
+            e.preventDefault();
+            startNewStory();
+        });
+        
+        // Start new story buttons
+        $('#newStoryBtn, #newStoryAfterEndBtn').click(function() {
+            resetStoryInterface();
+        });
+        
+        // Choice buttons
+        $('#choice1').click(function() {
+            makeChoice(0);
+        });
+        
+        $('#choice2').click(function() {
+            makeChoice(1);
+        });
+        
+        // End story button
+        $('#endStoryBtn').click(function() {
+            endStory();
+        });
+        
+        // Generate vocabulary buttons
+        $('#generateVocabularyBtn, #vocabularyTabGenBtn').click(function() {
+            generateVocabulary();
+        });
+        
+        // Generate translation buttons
+        $('#generateTranslationBtn, #translationTabGenBtn').click(function() {
+            generateTranslation();
+        });
+        
+        // Copy and print buttons
+        $('#copyStoryBtn').click(function() {
+            copyStoryToClipboard();
+        });
+        
+        $('#printStoryBtn').click(function() {
+            printStory();
+        });
+    });
+    
+    // Start a new story
+    function startNewStory() {
+        // Show loading overlay
+        $('#loadingOverlay').removeClass('d-none');
+        $('#loadingMessage').text('Generating story...');
+        
+        // Get form data
+        const language = $('#language').val();
+        const level = $('#level').val();
+        const title = $('#storyTitle').val() || 'Adventure';
+        
+        // Get settings from localStorage
+        const settings = JSON.parse(localStorage.getItem('appSettings')) || {};
+        const temperature = settings.temperature || 0.7;
+        const topP = settings.topP || 0.9;
+        
+        // Prepare request data
+        const requestData = {
+            language,
+            level,
+            topic: title,
+            part_number: 1,
+            temperature,
+            top_p: topP
+        };
+        
+        // Make API request
+        $.ajax({
+            url: '/api/generate-story-part',
+            type: 'POST',
+            data: JSON.stringify(requestData),
+            contentType: 'application/json',
+            success: function(response) {
+                if (response.success) {
+                    updateStoryData({
+                        id: response.story_id,
+                        title: title,
+                        language: language,
+                        level: level,
+                        part: 1,
+                        text: response.story_part.story_text,
+                        choices: [
+                            response.story_part.choice_1,
+                            response.story_part.choice_2
+                        ],
+                        is_final: response.story_part.is_final || false
+                    });
+                    
+                    displayStory();
+                } else {
+                    showCustomAlert('Error generating story: ' + (response.error || 'Unknown error'), 'danger');
+                }
+                $('#loadingOverlay').addClass('d-none');
+            },
+            error: function(xhr, status, error) {
+                showCustomAlert('Failed to generate story. Please try again.', 'danger');
+                $('#loadingOverlay').addClass('d-none');
+                console.error(error);
+            }
+        });
+    }
+    
+    // Make a choice and continue the story
+    function makeChoice(choiceIndex) {
+        if (!currentStoryData.id) return;
+        
+        // Show loading overlay
+        $('#loadingOverlay').removeClass('d-none');
+        $('#loadingMessage').text('Generating next part...');
+        
+        // Get the selected choice
+        const choiceMade = currentStoryData.choices[choiceIndex];
+        
+        // Get settings from localStorage
+        const settings = JSON.parse(localStorage.getItem('appSettings')) || {};
+        const temperature = settings.temperature || 0.7;
+        const topP = settings.topP || 0.9;
+        
+        // Prepare request data
+        const requestData = {
+            story_id: currentStoryData.id,
+            language: currentStoryData.language,
+            level: currentStoryData.level,
+            topic: currentStoryData.title,
+            part_number: currentStoryData.part + 1,
+            previous_text: currentStoryData.text,
+            choice_made: choiceMade,
+            temperature,
+            top_p: topP
+        };
+        
+        // Make API request
+        $.ajax({
+            url: '/api/generate-story-part',
+            type: 'POST',
+            data: JSON.stringify(requestData),
+            contentType: 'application/json',
+            success: function(response) {
+                if (response.success) {
+                    updateStoryData({
+                        part: currentStoryData.part + 1,
+                        text: currentStoryData.text + '\n\n' + response.story_part.story_text,
+                        choices: [
+                            response.story_part.choice_1,
+                            response.story_part.choice_2
+                        ],
+                        is_final: response.story_part.is_final || false
+                    });
+                    
+                    displayStory();
+                } else {
+                    showCustomAlert('Error generating story continuation: ' + (response.error || 'Unknown error'), 'danger');
+                }
+                $('#loadingOverlay').addClass('d-none');
+            },
+            error: function(xhr, status, error) {
+                showCustomAlert('Failed to generate story continuation. Please try again.', 'danger');
+                $('#loadingOverlay').addClass('d-none');
+                console.error(error);
+            }
+        });
+    }
+    
+    // Update story data
+    function updateStoryData(data) {
+        // Merge new data with current data
+        currentStoryData = {
+            ...currentStoryData,
+            ...data
+        };
+    }
+    
+    // Display story
+    function displayStory() {
+        // Hide initial message, show story content
+        $('#initialMessage').addClass('d-none');
+        $('#storyContent').removeClass('d-none');
+        
+        // Update title and part indicator
+        $('#storyTitleDisplay').html(`
+            <i class="fas fa-book-open me-2"></i>${currentStoryData.title}
+            <span class="story-part-indicator">${currentStoryData.part}</span>
+        `);
+        
+        // Display story text
+        $('#mainStoryText').html(currentStoryData.text.replace(/\n/g, '<br>'));
+        
+        // Update choices or show ending
+        if (currentStoryData.is_final) {
+            // Story has ended
+            $('#storyChoices').addClass('d-none');
+            $('#storySettings').addClass('d-none');
+            $('#storyEnded').removeClass('d-none');
+        } else {
+            // Show choices
+            $('#storySettings').addClass('d-none');
+            $('#storyChoices').removeClass('d-none');
+            
+            // Update choice buttons
+            $('#choice1').text(currentStoryData.choices[0]);
+            $('#choice2').text(currentStoryData.choices[1]);
+        }
+        
+        // Scroll to top of story
+        $('#storyContent')[0].scrollIntoView({ behavior: 'smooth' });
+    }
+    
+    // Reset story interface to start new story
+    function resetStoryInterface() {
+        // Reset story data
+        currentStoryData = {
+            id: null,
+            title: '',
+            language: '',
+            level: '',
+            part: 1,
+            text: '',
+            choices: [],
+            is_final: false
+        };
+        
+        // Reset interface
+        $('#storySettings').removeClass('d-none');
+        $('#storyChoices').addClass('d-none');
+        $('#storyEnded').addClass('d-none');
+        $('#storyContent').addClass('d-none');
+        $('#initialMessage').removeClass('d-none');
+        
+        // Clear vocabulary and translation
+        $('#vocabularyContent').html(`
+            <div class="text-center py-4 vocabulary-placeholder">
+                <i class="fas fa-book fa-2x text-muted mb-2"></i>
+                <p class="text-muted">No vocabulary list generated yet.</p>
+                <button class="btn btn-sm btn-primary" id="vocabularyTabGenBtn">
+                    <i class="fas fa-magic me-1"></i>Generate Vocabulary
+                </button>
+            </div>
+        `);
+        
+        $('#translationContent').html(`
+            <div class="text-center py-4 translation-placeholder">
+                <i class="fas fa-language fa-2x text-muted mb-2"></i>
+                <p class="text-muted">No translation generated yet.</p>
+                <div class="mb-3">
+                    <label for="translationTargetLang" class="form-label">Target Language</label>
+                    <select class="form-select" id="translationTargetLang">
+                        <!-- Language options will be added dynamically -->
+                    </select>
+                </div>
+                <button class="btn btn-sm btn-primary" id="translationTabGenBtn">
+                    <i class="fas fa-magic me-1"></i>Generate Translation
+                </button>
+            </div>
+        `);
+        
+        // Rebind event handlers
+        $('#vocabularyTabGenBtn').click(function() {
+            generateVocabulary();
+        });
+        
+        $('#translationTabGenBtn').click(function() {
+            generateTranslation();
+        });
+    }
+    
+    // End current story
+    function endStory() {
+        if (!currentStoryData.id) return;
+        
+        // Mark story as final
+        currentStoryData.is_final = true;
+        
+        // Update interface
+        $('#storyChoices').addClass('d-none');
+        $('#storyEnded').removeClass('d-none');
+        
+        showCustomAlert('Story ended. You can now generate vocabulary or translation.', 'info');
+    }
+    
+    // Generate vocabulary for the story
+    function generateVocabulary() {
+        if (!currentStoryData.id) return;
+        
+        $('#loadingOverlay').removeClass('d-none');
+        $('#loadingMessage').text('Generating vocabulary...');
+        
+        // Mock API call for vocabulary generation
+        // In a real implementation, this would be an actual API call
+        setTimeout(function() {
+            const wordCount = currentStoryData.level === 'A1-A2' ? 5 : 
+                             (currentStoryData.level === 'B1-B2' ? 8 : 10);
+            
+            // Sample vocabulary data (would come from API in real implementation)
+            const vocabData = [
+                {
+                    word: "Sample Word 1",
+                    definition: "Definition of the first sample word.",
+                    example: "Example sentence using the first sample word."
+                },
+                {
+                    word: "Sample Word 2",
+                    definition: "Definition of the second sample word.",
+                    example: "Example sentence using the second sample word."
+                },
+                {
+                    word: "Sample Word 3",
+                    definition: "Definition of the third sample word.",
+                    example: "Example sentence using the third sample word."
+                }
+            ];
+            
+            displayVocabulary(vocabData);
+            $('#loadingOverlay').addClass('d-none');
+            
+            // Show vocabulary tab
+            $('#vocabulary-tab').tab('show');
+            
+            showCustomAlert('Vocabulary generated successfully!', 'success');
+        }, 1500);
+    }
+    
+    // Display vocabulary
+    function displayVocabulary(vocabularyData) {
+        let html = '<div class="accordion" id="vocabularyAccordion">';
+        
+        try {
+            vocabularyData.forEach((item, index) => {
+                const word = item.word || '';
+                const definition = item.definition || '';
+                const example = item.example || '';
+                
+                html += `
+                    <div class="accordion-item">
+                        <h2 class="accordion-header" id="vocab-heading-${index}">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#vocab-collapse-${index}" aria-expanded="false" aria-controls="vocab-collapse-${index}">
+                                ${word}
+                            </button>
+                        </h2>
+                        <div id="vocab-collapse-${index}" class="accordion-collapse collapse" aria-labelledby="vocab-heading-${index}" data-bs-parent="#vocabularyAccordion">
+                            <div class="accordion-body">
+                                <p><strong>Definition:</strong> ${definition}</p>
+                                <p><strong>Example:</strong> ${example}</p>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+        } catch (e) {
+            console.error('Error parsing vocabulary data', e);
+            html = `<div class="alert alert-warning">
+                        Could not display vocabulary data in the expected format.
+                    </div>`;
+        }
+        
+        html += '</div>';
+        $('#vocabularyContent').html(html);
+    }
+    
+    // Generate translation for the story
+    function generateTranslation() {
+        if (!currentStoryData.id) return;
+        
+        $('#loadingOverlay').removeClass('d-none');
+        $('#loadingMessage').text('Generating translation...');
+        
+        // Get selected target language
+        const targetLanguage = $('#translationTargetLang').val();
+        
+        // Mock API call for translation generation
+        // In a real implementation, this would be an actual API call
+        setTimeout(function() {
+            // Sample translation data (would come from API in real implementation)
+            const translationData = [
+                {
+                    original: "First paragraph of the story.",
+                    translation: "Translation of the first paragraph."
+                },
+                {
+                    original: "Second paragraph with more text.",
+                    translation: "Translation of the second paragraph with more text."
+                },
+                {
+                    original: "Third paragraph concluding this sample.",
+                    translation: "Translation of the third paragraph concluding this sample."
+                }
+            ];
+            
+            displayTranslation(translationData, targetLanguage);
+            $('#loadingOverlay').addClass('d-none');
+            
+            // Show translation tab
+            $('#translation-tab').tab('show');
+            
+            showCustomAlert('Translation generated successfully!', 'success');
+        }, 1500);
+    }
+    
+    // Display translation
+    function displayTranslation(translationData, targetLanguage) {
+        let html = `
+            <div class="mb-3">
+                <h5>Translation to ${targetLanguage || 'other language'}</h5>
+            </div>
+        `;
+        
+        try {
+            html += '<div class="translation-content">';
+            
+            translationData.forEach((item) => {
+                const original = item.original || '';
+                const translation = item.translation || '';
+                
+                html += `
+                    <div class="row mb-3 border-bottom pb-2">
+                        <div class="col-md-6">
+                            <div class="original-text">
+                                <p>${original}</p>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="translation-text">
+                                <p>${translation}</p>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            html += '</div>';
+        } catch (e) {
+            console.error('Error parsing translation data', e);
+            html = `<div class="alert alert-warning">
+                        Could not display translation data in the expected format.
+                    </div>`;
+        }
+        
+        $('#translationContent').html(html);
+    }
+    
+    // Copy story to clipboard
+    function copyStoryToClipboard() {
+        if (!currentStoryData.text) return;
+        
+        navigator.clipboard.writeText(currentStoryData.text)
+            .then(() => {
+                showCustomAlert('Story copied to clipboard!', 'success');
+            })
+            .catch(() => {
+                showCustomAlert('Failed to copy story. Please try again.', 'danger');
+            });
+    }
+    
+    // Print story
+    function printStory() {
+        if (!currentStoryData.text) return;
+        
+        const printWindow = window.open('', '_blank');
+        printWindow.document.write(`
+            <html>
+                <head>
+                    <title>${currentStoryData.title}</title>
+                    <style>
+                        body {
+                            font-family: Arial, sans-serif;
+                            padding: 20px;
+                            line-height: 1.6;
+                        }
+                        h1 {
+                            text-align: center;
+                            color: #4F8BF9;
+                            margin-bottom: 20px;
+                        }
+                        .metadata {
+                            text-align: center;
+                            color: #666;
+                            margin-bottom: 30px;
+                        }
+                        .content {
+                            max-width: 800px;
+                            margin: 0 auto;
+                        }
+                    </style>
+                </head>
+                <body>
+                    <h1>${currentStoryData.title}</h1>
+                    <div class="metadata">
+                        <p>Language: ${currentStoryData.language} | Level: ${currentStoryData.level} | Parts: ${currentStoryData.part}</p>
+                    </div>
+                    <div class="content">
+                        ${currentStoryData.text.replace(/\n/g, '<br>')}
+                    </div>
+                </body>
+            </html>
+        `);
+        
+        printWindow.document.close();
+        printWindow.focus();
+        setTimeout(() => {
+            printWindow.print();
+            printWindow.close();
+        }, 500);
+    }
+</script>
+{% endblock %}

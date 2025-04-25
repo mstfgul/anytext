@@ -1,0 +1,405 @@
+/*
+ * Main stylesheet for the Language Learning Application
+ */
+
+ :root {
+    --primary-color: #4F8BF9;
+    --secondary-color: #FF4B4B;
+    --accent-color: #F0F2F6;
+    --light-color: #F8F9FA;
+    --dark-color: #343A40;
+    --success-color: #28A745;
+    --warning-color: #FFC107;
+    --danger-color: #DC3545;
+    --info-color: #17A2B8;
+    
+    --text-font-size: 16px;
+    --heading-font-size: 24px;
+    --subtitle-font-size: 18px;
+}
+
+/* Body & Common Elements */
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #f9f9f9;
+    color: #333;
+    line-height: 1.6;
+}
+
+.dark-theme {
+    background-color: #222;
+    color: #f4f4f4;
+}
+
+.dark-theme .card,
+.dark-theme .modal-content {
+    background-color: #333;
+    color: #f4f4f4;
+}
+
+.dark-theme .card-header:not(.bg-primary) {
+    background-color: #444;
+    color: #f4f4f4;
+}
+
+.dark-theme .form-control,
+.dark-theme .form-select {
+    background-color: #444;
+    color: #f4f4f4;
+    border-color: #555;
+}
+
+/* Headers */
+h1, h2, h3, h4, h5, h6 {
+    font-weight: 600;
+    color: var(--primary-color);
+}
+
+.dark-theme h1, 
+.dark-theme h2, 
+.dark-theme h3, 
+.dark-theme h4, 
+.dark-theme h5, 
+.dark-theme h6 {
+    color: #6a9efb;
+}
+
+/* Cards */
+.card {
+    border-radius: 0.5rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    margin-bottom: 1.5rem;
+    border: none;
+    overflow: hidden;
+}
+
+.card-header {
+    font-weight: 600;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+/* Buttons */
+.btn {
+    border-radius: 0.25rem;
+    font-weight: 500;
+}
+
+.btn-primary {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+.btn-primary:hover {
+    background-color: #3a78e0;
+    border-color: #3a78e0;
+}
+
+.btn-outline-primary {
+    color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+.btn-outline-primary:hover {
+    background-color: var(--primary-color);
+    color: white;
+}
+
+/* Navigation */
+.navbar {
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.navbar-brand {
+    font-weight: 700;
+    font-size: 1.4rem;
+}
+
+.nav-link {
+    font-weight: 500;
+}
+
+/* Sidebar */
+.sidebar {
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+}
+
+/* Forms */
+.form-label {
+    font-weight: 500;
+    margin-bottom: 0.3rem;
+}
+
+.form-control:focus,
+.form-select:focus,
+.form-check-input:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 0.2rem rgba(79, 139, 249, 0.25);
+}
+
+/* Tabs */
+.nav-tabs .nav-link {
+    color: #666;
+    font-weight: 500;
+}
+
+.nav-tabs .nav-link.active {
+    color: var(--primary-color);
+    font-weight: 600;
+}
+
+.dark-theme .nav-tabs .nav-link {
+    color: #ccc;
+}
+
+.dark-theme .nav-tabs .nav-link.active {
+    color: #6a9efb;
+    background-color: #333;
+    border-color: #555 #555 #333;
+}
+
+/* Accordions */
+.accordion-button:not(.collapsed) {
+    background-color: rgba(79, 139, 249, 0.1);
+    color: var(--primary-color);
+}
+
+.dark-theme .accordion-button:not(.collapsed) {
+    background-color: #444;
+    color: #6a9efb;
+}
+
+.dark-theme .accordion-button.collapsed {
+    background-color: #333;
+    color: #f4f4f4;
+}
+
+.dark-theme .accordion-body {
+    background-color: #333;
+    color: #f4f4f4;
+}
+
+/* Badges */
+.badge {
+    font-weight: 500;
+    padding: 0.4em 0.8em;
+}
+
+.topic-badge {
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.topic-badge:hover {
+    background-color: var(--primary-color) !important;
+    color: white !important;
+}
+
+/* Text Content */
+.text-content {
+    font-size: var(--text-font-size);
+    line-height: 1.8;
+    margin-bottom: 1.5rem;
+}
+
+/* Utility Classes */
+.cursor-pointer {
+    cursor: pointer;
+}
+
+/* Footer */
+footer {
+    color: #666;
+    border-top: 1px solid #eee;
+}
+
+.dark-theme footer {
+    color: #aaa;
+    border-top: 1px solid #444;
+    background-color: #222 !important;
+}
+
+/* Print Styles */
+@media print {
+    body {
+        padding: 0;
+        margin: 0;
+    }
+    
+    .no-print {
+        display: none !important;
+    }
+    
+    .text-content {
+        font-size: 12pt;
+        line-height: 1.6;
+    }
+}
+
+/* Loading Overlay */
+.loading-overlay {
+    background-color: rgba(0, 0, 0, 0.7);
+}
+
+.loading-overlay h4 {
+    color: white;
+}
+
+/* Interactive Story specific styles */
+.story-content {
+    font-size: var(--text-font-size);
+    line-height: 1.8;
+    margin-bottom: 1.5rem;
+    background-color: white;
+    padding: 2rem;
+    border-radius: 0.5rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+}
+
+.dark-theme .story-content {
+    background-color: #333;
+    color: #f4f4f4;
+}
+
+.story-choices {
+    display: flex;
+    gap: 1rem;
+    flex-direction: column;
+    margin-top: 2rem;
+}
+
+.choice-btn {
+    padding: 1rem;
+    text-align: left;
+    font-weight: normal;
+    white-space: normal;
+    border-radius: 0.5rem;
+    transition: all 0.2s;
+}
+
+.choice-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* History Cards */
+.history-card {
+    transition: all 0.2s;
+    cursor: pointer;
+}
+
+.history-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* Translation Content */
+.translation-content .row:hover {
+    background-color: rgba(79, 139, 249, 0.05);
+}
+
+.dark-theme .translation-content .row:hover {
+    background-color: rgba(79, 139, 249, 0.15);
+}
+
+/* Vocabulary and Exercise displays */
+.word-card, .exercise-card {
+    background-color: white;
+    border-radius: 0.5rem;
+    padding: 1.5rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    transition: all 0.2s;
+    margin-bottom: 1rem;
+}
+
+.dark-theme .word-card,
+.dark-theme .exercise-card {
+    background-color: #333;
+}
+
+.word-card:hover, .exercise-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.word-title, .exercise-title {
+    font-weight: 600;
+    color: var(--primary-color);
+    margin-bottom: 0.5rem;
+}
+
+.dark-theme .word-title,
+.dark-theme .exercise-title {
+    color: #6a9efb;
+}
+
+.word-definition, .exercise-content {
+    margin-bottom: 1rem;
+}
+
+.word-example, .exercise-solution {
+    color: #666;
+    font-style: italic;
+}
+
+.dark-theme .word-example,
+.dark-theme .exercise-solution {
+    color: #bbb;
+}
+
+/* Media Queries */
+@media (max-width: 768px) {
+    .sidebar {
+        position: relative;
+        top: 0;
+    }
+    
+    .navbar-brand {
+        font-size: 1.2rem;
+    }
+    
+    .story-choices {
+        flex-direction: column;
+    }
+}
+
+/* Animation and Effects */
+.fade-in {
+    animation: fadeIn 0.5s ease-in;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.slide-in {
+    animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+    from { transform: translateY(20px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+/* Custom Alert Styling */
+.custom-alert {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 1050;
+    min-width: 300px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    border-radius: 0.5rem;
+    opacity: 0;
+    animation: alertFadeIn 0.3s forwards, alertFadeOut 0.3s 5s forwards;
+}
+
+@keyframes alertFadeIn {
+    from { opacity: 0; transform: translateX(50px); }
+    to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes alertFadeOut {
+    from { opacity: 1; transform: translateX(0); }
+    to { opacity: 0; transform: translateX(50px); }
+}

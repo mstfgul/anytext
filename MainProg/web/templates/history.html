@@ -1,0 +1,1074 @@
+{% extends "base.html" %}
+
+{% block title %}History{% endblock %}
+
+{% block additional_css %}
+<style>
+    .history-card {
+        transition: all 0.2s;
+        cursor: pointer;
+    }
+    
+    .history-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+    }
+    
+    .tab-content {
+        min-height: 400px;
+    }
+    
+    .history-date {
+        font-size: 0.8rem;
+        color: #777;
+    }
+    
+    .history-preview {
+        max-height: 100px;
+        overflow: hidden;
+        position: relative;
+    }
+    
+    .history-preview::after {
+        content: "";
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        height: 40px;
+        background: linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,1));
+    }
+    
+    .dark-theme .history-preview::after {
+        background: linear-gradient(to bottom, rgba(33,33,33,0), rgba(33,33,33,1));
+    }
+    
+    .history-languages {
+        font-style: italic;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-10">
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="fas fa-history me-2"></i>Your Content History
+                </h5>
+                <div>
+                    <button class="btn btn-sm btn-light" id="exportHistoryBtn" title="Export History">
+                        <i class="fas fa-download me-1"></i>Export
+                    </button>
+                    <button class="btn btn-sm btn-light" id="clearHistoryBtn" title="Clear History">
+                        <i class="fas fa-trash me-1"></i>Clear All
+                    </button>
+                </div>
+            </div>
+            <div class="card-body">
+                <ul class="nav nav-tabs" id="historyTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="texts-tab" data-bs-toggle="tab" data-bs-target="#texts" type="button" role="tab" aria-controls="texts" aria-selected="true">
+                            <i class="fas fa-file-alt me-1"></i> Generated Texts
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="stories-tab" data-bs-toggle="tab" data-bs-target="#stories" type="button" role="tab" aria-controls="stories" aria-selected="false">
+                            <i class="fas fa-book me-1"></i> Interactive Stories
+                        </button>
+                    </li>
+                </ul>
+                
+                <div class="tab-content pt-4" id="historyTabsContent">
+                    <!-- Generated Texts Tab -->
+                    <div class="tab-pane fade show active" id="texts" role="tabpanel" aria-labelledby="texts-tab">
+                        {% if history %}
+                            <div class="row row-cols-1 row-cols-md-2 g-4">
+                                {% for item in history %}
+                                <div class="col">
+                                    <div class="card history-card" data-id="{{ loop.index0 }}" data-type="text">
+                                        <div class="card-body">
+                                            <h5 class="card-title">{{ item.topic }}</h5>
+                                            <p class="history-date">
+                                                <i class="fas fa-calendar-alt me-1"></i>{{ item.timestamp }}
+                                            </p>
+                                            <p class="history-languages">
+                                                <span class="badge bg-primary">{{ item.language }}</span>
+                                                <span class="badge bg-secondary">{{ item.level }}</span>
+                                                {% if item.text_type != "General" %}
+                                                <span class="badge bg-info">{{ item.text_type }}</span>
+                                                {% endif %}
+                                            </p>
+                                            <div class="history-preview">
+                                                {{ item.text|truncate(200) }}
+                                            </div>
+                                        </div>
+                                        <div class="card-footer d-flex justify-content-between">
+                                            <button class="btn btn-sm btn-outline-primary view-text-btn" data-id="{{ loop.index0 }}">
+                                                <i class="fas fa-eye me-1"></i>View
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-danger delete-text-btn" data-id="{{ loop.index0 }}">
+                                                <i class="fas fa-trash me-1"></i>Delete
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <div class="text-center py-5">
+                                <i class="fas fa-file-alt fa-3x text-muted mb-3"></i>
+                                <h4 class="text-muted">No saved texts yet</h4>
+                                <p>Generate some texts to see them here!</p>
+                                <a href="{{ url_for('text_generator') }}" class="btn btn-primary mt-2">
+                                    <i class="fas fa-magic me-2"></i>Generate Text
+                                </a>
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Interactive Stories Tab -->
+                    <div class="tab-pane fade" id="stories" role="tabpanel" aria-labelledby="stories-tab">
+                        {% if stories %}
+                            <div class="row row-cols-1 row-cols-md-2 g-4">
+                                {% for story in stories %}
+                                <div class="col">
+                                    <div class="card history-card" data-id="{{ story.id }}" data-type="story">
+                                        <div class="card-body">
+                                            <h5 class="card-title">{{ story.title }}</h5>
+                                            <p class="history-date">
+                                                <i class="fas fa-calendar-alt me-1"></i>{{ story.last_updated }}
+                                            </p>
+                                            <p class="history-languages">
+                                                <span class="badge bg-primary">{{ story.language }}</span>
+                                                <span class="badge bg-secondary">{{ story.level }}</span>
+                                                <span class="badge bg-info">Parts: {{ story.parts_count }}</span>
+                                                {% if story.is_complete %}
+                                                <span class="badge bg-success">Completed</span>
+                                                {% else %}
+                                                <span class="badge bg-warning">In Progress</span>
+                                                {% endif %}
+                                            </p>
+                                        </div>
+                                        <div class="card-footer d-flex justify-content-between">
+                                            {% if story.is_complete %}
+                                            <button class="btn btn-sm btn-outline-primary view-story-btn" data-id="{{ story.id }}">
+                                                <i class="fas fa-eye me-1"></i>View
+                                            </button>
+                                            {% else %}
+                                            <button class="btn btn-sm btn-outline-primary continue-story-btn" data-id="{{ story.id }}">
+                                                <i class="fas fa-play me-1"></i>Continue
+                                            </button>
+                                            {% endif %}
+                                            <button class="btn btn-sm btn-outline-danger delete-story-btn" data-id="{{ story.id }}">
+                                                <i class="fas fa-trash me-1"></i>Delete
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <div class="text-center py-5">
+                                <i class="fas fa-book fa-3x text-muted mb-3"></i>
+                                <h4 class="text-muted">No saved stories yet</h4>
+                                <p>Create some interactive stories to see them here!</p>
+                                <a href="{{ url_for('interactive_story') }}" class="btn btn-primary mt-2">
+                                    <i class="fas fa-book me-2"></i>Create Story
+                                </a>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- View Text Modal -->
+<div class="modal fade" id="viewTextModal" tabindex="-1" aria-labelledby="viewTextModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="viewTextModalLabel">Text Title</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Tabs for text content -->
+                <ul class="nav nav-tabs" id="textContentTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="text-tab" data-bs-toggle="tab" data-bs-target="#text" type="button" role="tab" aria-controls="text" aria-selected="true">
+                            <i class="fas fa-file-alt me-1"></i> Text
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="summary-tab" data-bs-toggle="tab" data-bs-target="#summary" type="button" role="tab" aria-controls="summary" aria-selected="false">
+                            <i class="fas fa-list me-1"></i> Summary
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="vocabulary-tab" data-bs-toggle="tab" data-bs-target="#vocabulary" type="button" role="tab" aria-controls="vocabulary" aria-selected="false">
+                            <i class="fas fa-book me-1"></i> Vocabulary
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="questions-tab" data-bs-toggle="tab" data-bs-target="#questions" type="button" role="tab" aria-controls="questions" aria-selected="false">
+                            <i class="fas fa-question-circle me-1"></i> Questions
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="exercises-tab" data-bs-toggle="tab" data-bs-target="#exercises" type="button" role="tab" aria-controls="exercises" aria-selected="false">
+                            <i class="fas fa-tasks me-1"></i> Exercises
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="translation-tab" data-bs-toggle="tab" data-bs-target="#translation" type="button" role="tab" aria-controls="translation" aria-selected="false">
+                            <i class="fas fa-language me-1"></i> Translation
+                        </button>
+                    </li>
+                </ul>
+                
+                <div class="tab-content p-3" id="textContentTabsContent">
+                    <!-- Text Tab -->
+                    <div class="tab-pane fade show active" id="text" role="tabpanel" aria-labelledby="text-tab">
+                        <div class="text-content" id="modalTextContent"></div>
+                    </div>
+                    
+                    <!-- Summary Tab -->
+                    <div class="tab-pane fade" id="summary" role="tabpanel" aria-labelledby="summary-tab">
+                        <div id="modalSummaryContent"></div>
+                    </div>
+                    
+                    <!-- Vocabulary Tab -->
+                    <div class="tab-pane fade" id="vocabulary" role="tabpanel" aria-labelledby="vocabulary-tab">
+                        <div id="modalVocabularyContent"></div>
+                    </div>
+                    
+                    <!-- Questions Tab -->
+                    <div class="tab-pane fade" id="questions" role="tabpanel" aria-labelledby="questions-tab">
+                        <div id="modalQuestionsContent"></div>
+                    </div>
+                    
+                    <!-- Exercises Tab -->
+                    <div class="tab-pane fade" id="exercises" role="tabpanel" aria-labelledby="exercises-tab">
+                        <div id="modalExercisesContent"></div>
+                    </div>
+                    
+                    <!-- Translation Tab -->
+                    <div class="tab-pane fade" id="translation" role="tabpanel" aria-labelledby="translation-tab">
+                        <div id="modalTranslationContent"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-primary" id="printTextModalBtn">
+                    <i class="fas fa-print me-1"></i>Print
+                </button>
+                <button type="button" class="btn btn-outline-primary" id="copyTextModalBtn">
+                    <i class="fas fa-copy me-1"></i>Copy
+                </button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- View Story Modal -->
+<div class="modal fade" id="viewStoryModal" tabindex="-1" aria-labelledby="viewStoryModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="viewStoryModalLabel">Story Title</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div class="story-info">
+                        <span class="badge bg-primary me-1" id="modalStoryLanguage">Language</span>
+                        <span class="badge bg-secondary me-1" id="modalStoryLevel">Level</span>
+                        <span class="badge bg-info me-1" id="modalStoryParts">Parts: 0</span>
+                        <span class="badge bg-success" id="modalStoryStatus">Status</span>
+                    </div>
+                    <div class="story-part-nav">
+                        <select class="form-select form-select-sm" id="storyPartSelector">
+                            <option>Loading parts...</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="story-content text-content" id="modalStoryContent"></div>
+                
+                <div class="mt-3" id="modalStoryChoices">
+                    <h6>At this point, you chose:</h6>
+                    <div class="alert alert-info" id="modalStoryChoice"></div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-primary" id="printStoryModalBtn">
+                    <i class="fas fa-print me-1"></i>Print
+                </button>
+                <button type="button" class="btn btn-outline-primary" id="copyStoryModalBtn">
+                    <i class="fas fa-copy me-1"></i>Copy
+                </button>
+                <button type="button" class="btn btn-primary" id="continueStoryModalBtn">
+                    <i class="fas fa-play me-1"></i>Continue
+                </button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Confirmation Modal -->
+<div class="modal fade" id="confirmationModal" tabindex="-1" aria-labelledby="confirmationModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="confirmationModalLabel">Confirm Action</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="confirmationModalBody">
+                Are you sure you want to proceed with this action?
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" id="confirmActionBtn">Confirm</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block additional_js %}
+<script>
+    // Current history items
+    const historyItems = {{ history|tojson|safe }};
+    const storyItems = {{ stories|tojson|safe }};
+    
+    // Current selected item
+    let currentViewingItem = null;
+    let currentActionCallback = null;
+    
+    $(document).ready(function() {
+        // View text button click
+        $('.view-text-btn').click(function() {
+            const id = $(this).data('id');
+            viewText(id);
+        });
+        
+        // Text card click (also views)
+        $('.history-card[data-type="text"]').click(function() {
+            const id = $(this).data('id');
+            viewText(id);
+        });
+        
+        // View/continue story button click
+        $('.view-story-btn, .continue-story-btn').click(function() {
+            const id = $(this).data('id');
+            viewStory(id);
+        });
+        
+        // Story card click (also views)
+        $('.history-card[data-type="story"]').click(function() {
+            const id = $(this).data('id');
+            viewStory(id);
+        });
+        
+        // Delete text button click
+        $('.delete-text-btn').click(function(e) {
+            e.stopPropagation(); // Prevent card click
+            const id = $(this).data('id');
+            showConfirmation(
+                "Delete Text", 
+                "Are you sure you want to delete this text? This action cannot be undone.",
+                () => deleteStory(id)
+            );
+        });
+        
+        // Confirm action button click
+        $('#confirmActionBtn').click(function() {
+            // Execute callback function if exists
+            if (typeof currentActionCallback === 'function') {
+                currentActionCallback();
+            }
+            
+            // Hide modal
+            $('#confirmationModal').modal('hide');
+        });
+        
+        // Print button in text modal
+        $('#printTextModalBtn').click(function() {
+            if (currentViewingItem) {
+                printText(currentViewingItem);
+            }
+        });
+        
+        // Copy button in text modal
+        $('#copyTextModalBtn').click(function() {
+            if (currentViewingItem) {
+                copyTextToClipboard(currentViewingItem.text);
+            }
+        });
+        
+        // Print button in story modal
+        $('#printStoryModalBtn').click(function() {
+            if (currentViewingItem) {
+                printStory(currentViewingItem);
+            }
+        });
+        
+        // Copy button in story modal
+        $('#copyStoryModalBtn').click(function() {
+            if (currentViewingItem) {
+                copyTextToClipboard(currentViewingItem.text);
+            }
+        });
+        
+        // Story part selector change
+        $('#storyPartSelector').change(function() {
+            const partIndex = $(this).val();
+            if (currentViewingItem && currentViewingItem.parts) {
+                displayStoryPart(currentViewingItem, partIndex);
+            }
+        });
+        
+        // Continue story button in modal
+        $('#continueStoryModalBtn').click(function() {
+            if (currentViewingItem) {
+                continueStory(currentViewingItem.id);
+            }
+        });
+        
+        // Clear all history button
+        $('#clearHistoryBtn').click(function() {
+            showConfirmation(
+                "Clear All History", 
+                "Are you sure you want to clear all history? This will delete all texts and stories and cannot be undone.",
+                clearAllHistory
+            );
+        });
+        
+        // Export history button
+        $('#exportHistoryBtn').click(function() {
+            exportHistory();
+        });
+    });
+    
+    // View text details in modal
+    function viewText(id) {
+        // Get text data
+        const textData = historyItems[id];
+        if (!textData) return;
+        
+        // Store current viewing item
+        currentViewingItem = textData;
+        
+        // Update modal title
+        $('#viewTextModalLabel').text(textData.topic);
+        
+        // Update text content
+        $('#modalTextContent').html(textData.text.replace(/\n/g, '<br>'));
+        
+        // Update summary content
+        if (textData.summary) {
+            $('#modalSummaryContent').html(`
+                <div class="text-content">
+                    ${textData.summary.replace(/\n/g, '<br>')}
+                </div>
+            `);
+        } else {
+            $('#modalSummaryContent').html(`
+                <div class="text-center py-4">
+                    <i class="fas fa-list fa-2x text-muted mb-2"></i>
+                    <p class="text-muted">No summary available for this text.</p>
+                </div>
+            `);
+        }
+        
+        // Update vocabulary content
+        if (textData.key_words) {
+            try {
+                displayModalVocabulary(textData.key_words);
+            } catch (e) {
+                $('#modalVocabularyContent').html(`
+                    <div class="text-center py-4">
+                        <i class="fas fa-exclamation-triangle fa-2x text-warning mb-2"></i>
+                        <p class="text-muted">Could not display vocabulary data.</p>
+                    </div>
+                `);
+            }
+        } else {
+            $('#modalVocabularyContent').html(`
+                <div class="text-center py-4">
+                    <i class="fas fa-book fa-2x text-muted mb-2"></i>
+                    <p class="text-muted">No vocabulary available for this text.</p>
+                </div>
+            `);
+        }
+        
+        // Update questions content
+        if (textData.questions) {
+            try {
+                displayModalQuestions(textData.questions);
+            } catch (e) {
+                $('#modalQuestionsContent').html(`
+                    <div class="text-center py-4">
+                        <i class="fas fa-exclamation-triangle fa-2x text-warning mb-2"></i>
+                        <p class="text-muted">Could not display questions data.</p>
+                    </div>
+                `);
+            }
+        } else {
+            $('#modalQuestionsContent').html(`
+                <div class="text-center py-4">
+                    <i class="fas fa-question-circle fa-2x text-muted mb-2"></i>
+                    <p class="text-muted">No questions available for this text.</p>
+                </div>
+            `);
+        }
+        
+        // Update exercises content
+        if (textData.exercises) {
+            try {
+                displayModalExercises(textData.exercises);
+            } catch (e) {
+                $('#modalExercisesContent').html(`
+                    <div class="text-center py-4">
+                        <i class="fas fa-exclamation-triangle fa-2x text-warning mb-2"></i>
+                        <p class="text-muted">Could not display exercises data.</p>
+                    </div>
+                `);
+            }
+        } else {
+            $('#modalExercisesContent').html(`
+                <div class="text-center py-4">
+                    <i class="fas fa-tasks fa-2x text-muted mb-2"></i>
+                    <p class="text-muted">No exercises available for this text.</p>
+                </div>
+            `);
+        }
+        
+        // Update translation content
+        if (textData.translation) {
+            try {
+                displayModalTranslation(textData.translation, textData.translation_language);
+            } catch (e) {
+                $('#modalTranslationContent').html(`
+                    <div class="text-center py-4">
+                        <i class="fas fa-exclamation-triangle fa-2x text-warning mb-2"></i>
+                        <p class="text-muted">Could not display translation data.</p>
+                    </div>
+                `);
+            }
+        } else {
+            $('#modalTranslationContent').html(`
+                <div class="text-center py-4">
+                    <i class="fas fa-language fa-2x text-muted mb-2"></i>
+                    <p class="text-muted">No translation available for this text.</p>
+                </div>
+            `);
+        }
+        
+        // Show modal
+        $('#viewTextModal').modal('show');
+    }
+    
+    // View story details in modal
+    function viewStory(id) {
+        // Placeholder for API call to get full story
+        $.ajax({
+            url: '/api/get-story',
+            method: 'GET',
+            data: { story_id: id },
+            success: function(response) {
+                if (response.success) {
+                    const storyData = response.story;
+                    
+                    // Store current viewing item
+                    currentViewingItem = storyData;
+                    
+                    // Update modal title
+                    $('#viewStoryModalLabel').text(storyData.title);
+                    
+                    // Update story info
+                    $('#modalStoryLanguage').text(storyData.language);
+                    $('#modalStoryLevel').text(storyData.level);
+                    
+                    const partsCount = Object.keys(storyData.parts).length;
+                    $('#modalStoryParts').text(`Parts: ${partsCount}`);
+                    
+                    // Check if story is complete
+                    const lastPartKey = `part_${partsCount}`;
+                    const isComplete = storyData.parts[lastPartKey]?.is_final || false;
+                    
+                    if (isComplete) {
+                        $('#modalStoryStatus').text('Completed').removeClass('bg-warning').addClass('bg-success');
+                        $('#continueStoryModalBtn').addClass('d-none');
+                    } else {
+                        $('#modalStoryStatus').text('In Progress').removeClass('bg-success').addClass('bg-warning');
+                        $('#continueStoryModalBtn').removeClass('d-none');
+                    }
+                    
+                    // Populate part selector
+                    $('#storyPartSelector').empty();
+                    for (let i = 1; i <= partsCount; i++) {
+                        const partKey = `part_${i}`;
+                        const partChoice = storyData.parts[partKey].choice_made || 'Beginning';
+                        $('#storyPartSelector').append(`
+                            <option value="${partKey}">Part ${i}: ${partChoice}</option>
+                        `);
+                    }
+                    
+                    // Display first part by default
+                    displayStoryPart(storyData, 'part_1');
+                    
+                    // Show modal
+                    $('#viewStoryModal').modal('show');
+                } else {
+                    showCustomAlert('Error retrieving story: ' + (response.error || 'Unknown error'), 'danger');
+                }
+            },
+            error: function(xhr, status, error) {
+                showCustomAlert('Failed to retrieve story. Please try again.', 'danger');
+                console.error(error);
+            }
+        });
+    }
+    
+    // Display specific story part
+    function displayStoryPart(storyData, partKey) {
+        const part = storyData.parts[partKey];
+        if (!part) return;
+        
+        // Display part text
+        $('#modalStoryContent').html(part.text.replace(/\n/g, '<br>'));
+        
+        // Display choice if not first part
+        if (part.choice_made) {
+            $('#modalStoryChoices').removeClass('d-none');
+            $('#modalStoryChoice').text(part.choice_made);
+        } else {
+            $('#modalStoryChoices').addClass('d-none');
+        }
+        
+        // Update select
+        $('#storyPartSelector').val(partKey);
+    }
+    
+    // Display vocabulary data in modal
+    function displayModalVocabulary(vocabularyData) {
+        let html = '<div class="accordion" id="modalVocabularyAccordion">';
+        
+        const vocabItems = Array.isArray(vocabularyData) ? 
+            vocabularyData : 
+            (vocabularyData.hasOwnProperty('length') ? vocabularyData : [vocabularyData]);
+        
+        vocabItems.forEach((item, index) => {
+            const word = item.word || '';
+            const definition = item.definition || '';
+            const example = item.example || '';
+            
+            html += `
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="modal-vocab-heading-${index}">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#modal-vocab-collapse-${index}" aria-expanded="false" aria-controls="modal-vocab-collapse-${index}">
+                            ${word}
+                        </button>
+                    </h2>
+                    <div id="modal-vocab-collapse-${index}" class="accordion-collapse collapse" aria-labelledby="modal-vocab-heading-${index}" data-bs-parent="#modalVocabularyAccordion">
+                        <div class="accordion-body">
+                            <p><strong>Definition:</strong> ${definition}</p>
+                            <p><strong>Example:</strong> ${example}</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+        
+        html += '</div>';
+        $('#modalVocabularyContent').html(html);
+    }
+    
+    // Display questions data in modal
+    function displayModalQuestions(questionsData) {
+        let html = '<div class="accordion" id="modalQuestionsAccordion">';
+        
+        let questionItems = [];
+        
+        if (Array.isArray(questionsData)) {
+            questionItems = questionsData;
+        } else if (typeof questionsData === 'object') {
+            if (questionsData.questions && Array.isArray(questionsData.questions)) {
+                questionItems = questionsData.questions;
+            } else {
+                questionItems = [questionsData];
+            }
+        }
+        
+        questionItems.forEach((item, index) => {
+            const question = item.question || '';
+            const answer = item.answer || '';
+            
+            html += `
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="modal-question-heading-${index}">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#modal-question-collapse-${index}" aria-expanded="false" aria-controls="modal-question-collapse-${index}">
+                            ${question}
+                        </button>
+                    </h2>
+                    <div id="modal-question-collapse-${index}" class="accordion-collapse collapse" aria-labelledby="modal-question-heading-${index}" data-bs-parent="#modalQuestionsAccordion">
+                        <div class="accordion-body">
+                            <p><strong>Answer:</strong> ${answer}</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+        
+        html += '</div>';
+        $('#modalQuestionsContent').html(html);
+    }
+    
+    // Display exercises data in modal
+    function displayModalExercises(exercisesData) {
+        let html = '<div class="accordion" id="modalExercisesAccordion">';
+        
+        let exerciseItems = [];
+        
+        if (Array.isArray(exercisesData)) {
+            exerciseItems = exercisesData;
+        } else if (typeof exercisesData === 'object') {
+            if (exercisesData.exercises && Array.isArray(exercisesData.exercises)) {
+                exerciseItems = exercisesData.exercises;
+            } else {
+                exerciseItems = [exercisesData];
+            }
+        }
+        
+        exerciseItems.forEach((item, index) => {
+            const instructions = item.instructions || '';
+            const content = item.content || '';
+            const solution = item.solution || '';
+            
+            html += `
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="modal-exercise-heading-${index}">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#modal-exercise-collapse-${index}" aria-expanded="false" aria-controls="modal-exercise-collapse-${index}">
+                            Exercise ${index+1}: ${instructions}
+                        </button>
+                    </h2>
+                    <div id="modal-exercise-collapse-${index}" class="accordion-collapse collapse" aria-labelledby="modal-exercise-heading-${index}" data-bs-parent="#modalExercisesAccordion">
+                        <div class="accordion-body">
+                            <p><strong>Content:</strong> ${content}</p>
+                            <p class="mt-3 solution-hidden">
+                                <button class="btn btn-sm btn-outline-primary modal-show-solution-btn" data-index="${index}">
+                                    <i class="fas fa-eye me-1"></i>Show Solution
+                                </button>
+                            </p>
+                            <div class="solution-content modal-solution-${index} d-none">
+                                <p><strong>Solution:</strong> ${solution}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+        
+        html += '</div>';
+        $('#modalExercisesContent').html(html);
+        
+        // Add event listener for show solution buttons
+        $('.modal-show-solution-btn').click(function() {
+            const index = $(this).data('index');
+            $(this).addClass('d-none');
+            $(`.modal-solution-${index}`).removeClass('d-none');
+        });
+    }
+    
+    // Display translation data in modal
+    function displayModalTranslation(translationData, targetLanguage) {
+        let html = `
+            <div class="mb-3">
+                <h5>Translation to ${targetLanguage || 'other language'}</h5>
+            </div>
+        `;
+        
+        if (Array.isArray(translationData)) {
+            html += '<div class="translation-content">';
+            
+            translationData.forEach((item) => {
+                const original = item.original || '';
+                const translation = item.translation || '';
+                
+                html += `
+                    <div class="row mb-3 border-bottom pb-2">
+                        <div class="col-md-6">
+                            <div class="original-text">
+                                <p>${original}</p>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="translation-text">
+                                <p>${translation}</p>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            html += '</div>';
+        } else {
+            html = `<div class="alert alert-warning">
+                        Could not display translation data in the expected format.
+                    </div>
+                    <pre>${JSON.stringify(translationData, null, 2)}</pre>`;
+        }
+        
+        $('#modalTranslationContent').html(html);
+    }
+    
+    // Delete text
+    function deleteText(id) {
+        // In a real implementation, this would be an API call
+        showCustomAlert('Text deleted successfully!', 'success');
+        location.reload(); // Reload page to reflect changes
+    }
+    
+    // Delete story
+    function deleteStory(id) {
+        $.ajax({
+            url: '/api/delete-story',
+            method: 'POST',
+            data: JSON.stringify({ story_id: id }),
+            contentType: 'application/json',
+            success: function(response) {
+                if (response.success) {
+                    showCustomAlert('Story deleted successfully!', 'success');
+                    location.reload(); // Reload page to reflect changes
+                } else {
+                    showCustomAlert('Error deleting story: ' + (response.error || 'Unknown error'), 'danger');
+                }
+            },
+            error: function(xhr, status, error) {
+                showCustomAlert('Failed to delete story. Please try again.', 'danger');
+                console.error(error);
+            }
+        });
+    }
+    
+    // Continue story
+    function continueStory(id) {
+        // Navigate to interactive story page with story ID
+        window.location.href = `/interactive-story?story_id=${id}`;
+    }
+    
+    // Print text
+    function printText(textData) {
+        if (!textData) return;
+        
+        const printWindow = window.open('', '_blank');
+        printWindow.document.write(`
+            <html>
+                <head>
+                    <title>${textData.topic}</title>
+                    <style>
+                        body {
+                            font-family: Arial, sans-serif;
+                            padding: 20px;
+                            line-height: 1.6;
+                        }
+                        h1 {
+                            text-align: center;
+                            color: #4F8BF9;
+                            margin-bottom: 20px;
+                        }
+                        .metadata {
+                            text-align: center;
+                            color: #666;
+                            margin-bottom: 30px;
+                        }
+                        .content {
+                            max-width: 800px;
+                            margin: 0 auto;
+                        }
+                        hr {
+                            margin: 30px 0;
+                            border: 0;
+                            border-top: 1px solid #ddd;
+                        }
+                        h2 {
+                            color: #4F8BF9;
+                            margin-top: 30px;
+                        }
+                    </style>
+                </head>
+                <body>
+                    <h1>${textData.topic}</h1>
+                    <div class="metadata">
+                        <p>Language: ${textData.language} | Level: ${textData.level}</p>
+                    </div>
+                    <div class="content">
+                        <div class="text">
+                            ${textData.text.replace(/\n/g, '<br>')}
+                        </div>
+                        
+                        ${textData.summary ? `
+                            <hr>
+                            <h2>Summary</h2>
+                            <div class="summary">
+                                ${textData.summary.replace(/\n/g, '<br>')}
+                            </div>
+                        ` : ''}
+                    </div>
+                </body>
+            </html>
+        `);
+        
+        printWindow.document.close();
+        printWindow.focus();
+        setTimeout(() => {
+            printWindow.print();
+            printWindow.close();
+        }, 500);
+    }
+    
+    // Print story
+    function printStory(storyData) {
+        if (!storyData) return;
+        
+        const printWindow = window.open('', '_blank');
+        
+        let storyText = '';
+        // Combine all parts
+        const partKeys = Object.keys(storyData.parts).sort();
+        partKeys.forEach(key => {
+            storyText += storyData.parts[key].text + '\n\n';
+        });
+        
+        printWindow.document.write(`
+            <html>
+                <head>
+                    <title>${storyData.title}</title>
+                    <style>
+                        body {
+                            font-family: Arial, sans-serif;
+                            padding: 20px;
+                            line-height: 1.6;
+                        }
+                        h1 {
+                            text-align: center;
+                            color: #4F8BF9;
+                            margin-bottom: 20px;
+                        }
+                        .metadata {
+                            text-align: center;
+                            color: #666;
+                            margin-bottom: 30px;
+                        }
+                        .content {
+                            max-width: 800px;
+                            margin: 0 auto;
+                        }
+                    </style>
+                </head>
+                <body>
+                    <h1>${storyData.title}</h1>
+                    <div class="metadata">
+                        <p>Language: ${storyData.language} | Level: ${storyData.level} | Parts: ${partKeys.length}</p>
+                    </div>
+                    <div class="content">
+                        ${storyText.replace(/\n/g, '<br>')}
+                    </div>
+                </body>
+            </html>
+        `);
+        
+        printWindow.document.close();
+        printWindow.focus();
+        setTimeout(() => {
+            printWindow.print();
+            printWindow.close();
+        }, 500);
+    }
+    
+    // Copy text to clipboard
+    function copyTextToClipboard(text) {
+        if (!text) return;
+        
+        navigator.clipboard.writeText(text)
+            .then(() => {
+                showCustomAlert('Text copied to clipboard!', 'success');
+            })
+            .catch(() => {
+                showCustomAlert('Failed to copy text. Please try again.', 'danger');
+            });
+    }
+    
+    // Show confirmation modal
+    function showConfirmation(title, message, callback) {
+        $('#confirmationModalLabel').text(title);
+        $('#confirmationModalBody').text(message);
+        currentActionCallback = callback;
+        $('#confirmationModal').modal('show');
+    }
+    
+    // Clear all history
+    function clearAllHistory() {
+        // In a real implementation, this would be an API call
+        showCustomAlert('All history cleared successfully!', 'success');
+        location.reload(); // Reload page to reflect changes
+    }
+    
+    // Export history
+    function exportHistory() {
+        // Combine texts and stories
+        const exportData = {
+            texts: historyItems,
+            stories: storyItems,
+            exportDate: new Date().toISOString()
+        };
+        
+        // Create file
+        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(exportData, null, 2));
+        const downloadAnchorNode = document.createElement('a');
+        downloadAnchorNode.setAttribute("href", dataStr);
+        downloadAnchorNode.setAttribute("download", "language-learning-history.json");
+        document.body.appendChild(downloadAnchorNode);
+        downloadAnchorNode.click();
+        downloadAnchorNode.remove();
+        
+        showCustomAlert('History exported successfully!', 'success');
+    }
+    
+    // Show custom alert
+    function showCustomAlert(message, type = 'info') {
+        // Create alert element
+        const alertHtml = `
+            <div class="custom-alert alert alert-${type} alert-dismissible fade show">
+                <div>${message}</div>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        `;
+        
+        // Add alert to the page
+        $('body').append(alertHtml);
+        
+        // Auto-dismiss after 5 seconds
+        setTimeout(function() {
+            $('.custom-alert').alert('close');
+        }, 5000);
+    }
+</script>
+{% endblock %} deleteText(id)
+            );
+        });
+        
+        // Delete story button click
+        $('.delete-story-btn').click(function(e) {
+            e.stopPropagation(); // Prevent card click
+            const id = $(this).data('id');
+            showConfirmation(
+                "Delete Story", 
+                "Are you sure you want to delete this story? This action cannot be undone.",
+                () =>
